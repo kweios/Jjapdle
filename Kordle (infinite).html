@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>꼬들 무한 모드</title>
+<style>
+    body {
+        font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+        margin: 0;
+        padding: 20px;
+        touch-action: manipulation;
+    }
+    .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        max-width: 400px;
+        margin-bottom: 30px;
+    }
+    .title {
+        font-size: 24px;
+        font-weight: bold;
+    }
+    .refresh-btn {
+        font-size: 28px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        padding: 5px;
+        color: #1a1a1b;
+    }
+    .grid {
+        display: grid;
+        grid-template-rows: repeat(6, 1fr);
+        grid-template-columns: repeat(6, 1fr);
+        gap: 6px;
+        margin-bottom: 40px;
+    }
+    .cell {
+        width: 50px;
+        height: 50px;
+        border: 2px solid #d3d6da;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 28px;
+        font-weight: bold;
+        color: #1a1a1b;
+        box-sizing: border-box;
+    }
+    .cell.filled { border-color: #878a8c; }
+    /* 요청한 색상으로 변경됨 */
+    .cell.correct { background-color: #22C55E; border-color: #22C55E; color: white; }
+    .cell.present { background-color: #EAB307; border-color: #EAB307; color: white; }
+    .cell.absent { background-color: #94A3B7; border-color: #94A3B7; color: white; }
+    
+    .keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        max-width: 400px;
+    }
+    .row {
+        display: flex;
+        justify-content: center;
+        gap: 6px;
+    }
+    .key {
+        background-color: #d3d6da;
+        border: none;
+        border-radius: 4px;
+        height: 58px;
+        min-width: 32px;
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        color: #1a1a1b;
+        user-select: none;
+    }
+    .key.large {
+        flex: 1.5;
+        font-size: 16px;
+    }
+    /* 요청한 색상으로 변경됨 */
+    .key.correct { background-color: #22C55E; color: white; }
+    .key.present { background-color: #EAB307; color: white; }
+    .key.absent { background-color: #94A3B7; color: white; }
+</style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="title">꼬들(무한)</div>
+        <button class="refresh-btn" onclick="initGame()" title="새로고침">↻</button>
+    </div>
+
+    <div class="grid" id="grid">
+        </div>
+
+    <div class="keyboard" id="keyboard">
+        <div class="row">
+            <button class="key" onclick="handleKey('ㅂ')">ㅂ</button>
+            <button class="key" onclick="handleKey('ㅈ')">ㅈ</button>
+            <button class="key" onclick="handleKey('ㄷ')">ㄷ</button>
+            <button class="key" onclick="handleKey('ㄱ')">ㄱ</button>
+            <button class="key" onclick="handleKey('ㅅ')">ㅅ</button>
+            <button class="key" onclick="handleKey('ㅛ')">ㅛ</button>
+            <button class="key" onclick="handleKey('ㅕ')">ㅕ</button>
+            <button class="key" onclick="handleKey('ㅑ')">ㅑ</button>
+        </div>
+        <div class="row">
+            <button class="key" onclick="handleKey('ㅁ')">ㅁ</button>
+            <button class="key" onclick="handleKey('ㄴ')">ㄴ</button>
+            <button class="key" onclick="handleKey('ㅇ')">ㅇ</button>
+            <button class="key" onclick="handleKey('ㄹ')">ㄹ</button>
+            <button class="key" onclick="handleKey('ㅎ')">ㅎ</button>
+            <button class="key" onclick="handleKey('ㅗ')">ㅗ</button>
+            <button class="key" onclick="handleKey('ㅓ')">ㅓ</button>
+            <button class="key" onclick="handleKey('ㅏ')">ㅏ</button>
+            <button class="key" onclick="handleKey('ㅣ')">ㅣ</button>
+        </div>
+        <div class="row">
+            <button class="key large" onclick="handleKey('Enter')">입력</button>
+            <button class="key" onclick="handleKey('ㅋ')">ㅋ</button>
+            <button class="key" onclick="handleKey('ㅌ')">ㅌ</button>
+            <button class="key" onclick="handleKey('ㅊ')">ㅊ</button>
+            <button class="key" onclick="handleKey('ㅍ')">ㅍ</button>
+            <button class="key" onclick="handleKey('ㅠ')">ㅠ</button>
+            <button class="key" onclick="handleKey('ㅜ')">ㅜ</button>
+            <button class="key" onclick="handleKey('ㅡ')">ㅡ</button>
+            <button class="key large" onclick="handleKey('Backspace')">삭제</button>
+        </div>
+    </div>
+
+<script>
+    // ㄱ~ㅎ 모든 단어 총집합!
+    const WORDS = [
+        // ㄱ
+        'ㄱㅏㄴㄱㅕㄱ', 'ㄱㅏㄹㄷㅡㅇ', 'ㄱㅏㅁㄷㅗㅇ', 'ㄱㅏㅇㅁㅜㄹ', 'ㄱㅓㄴㄱㅜㄱ',
+        'ㄱㅓㄴㅁㅜㄹ', 'ㄱㅓㄴㅅㅓㄹ', 'ㄱㅕㄹㅅㅓㄱ', 'ㄱㅕㄹㅅㅣㅁ', 'ㄱㅕㄹㅈㅓㅇ',
+        'ㄱㅕㅇㅊㅏㄹ', 'ㄱㅕㅇㅎㅓㅁ', 'ㄱㅗㅇㅈㅏㅇ', 'ㄱㅗㅇㅎㅏㅇ', 'ㄱㅜㄱㅁㅣㄴ',
+        'ㄱㅡㄱㅈㅏㅇ', 'ㄱㅣㄴㅈㅏㅇ', 'ㄱㅣㅁㅂㅏㅂ', 'ㄱㅏㅇㅅㅏㄴ', 'ㄱㅏㅁㄷㅗㄱ',
+        'ㄱㅓㅁㅈㅓㅇ', 'ㄱㅗㅇㅂㅓㅁ', 'ㄱㅡㅁㄱㅏㅇ', 'ㄱㅗㄹㅂㅏㅇ', 'ㄱㅜㄴㅂㅏㅁ',
+        'ㄱㅜㄴㅂㅗㄱ', 'ㄱㅡㄱㅂㅗㄱ', 'ㄱㅡㄴㅂㅗㄴ', 'ㄱㅡㄴㅈㅓㅂ', 'ㄱㅡㅂㅂㅕㄴ',
+        'ㄱㅡㅂㅅㅣㄱ', 'ㄱㅏㅁㅂㅏㅇ', 'ㄱㅓㅁㅊㅏㄹ', 'ㄱㅓㄱㅈㅓㅇ', 'ㄱㅕㅇㄹㅕㄱ',
+        'ㄱㅕㄹㅁㅏㄹ', 'ㄱㅕㅇㅎㅑㅇ', 'ㄱㅗㅇㅈㅓㄴ', 'ㄱㅗㅇㅈㅓㅇ', 'ㄱㅜㄹㅂㅗㄱ',
+        'ㄱㅏㅣㄴㅕㅁ', 'ㄱㅏㅣㅂㅕㄹ', 'ㄱㅏㅣㅇㅣㄴ', 'ㄱㅜㅣㅅㅣㄴ', 'ㄱㅗㅣㅁㅜㄹ',
+        'ㄱㅜㅣㅂㅣㄴ', 'ㄱㅕㅣㅅㅏㄴ', 'ㄱㅕㅣㄱㅡㅂ', 'ㄱㅗㄱㅜㅁㅏ', 'ㄱㅣㄹㅓㄱㅣ',
+        // ㄴ
+        'ㄴㅏㅁㅅㅏㄴ', 'ㄴㅏㅁㅂㅜㄱ', 'ㄴㅏㄱㅇㅕㅂ', 'ㄴㅏㅂㄷㅡㄱ', 'ㄴㅏㅁㅅㅓㅇ',
+        'ㄴㅗㅇㅁㅣㄴ', 'ㄴㅗㅇㅇㅓㅂ', 'ㄴㅗㅇㅈㅏㅇ', 'ㄴㅗㅇㅊㅗㄴ', 'ㄴㅡㄱㄱㅗㄹ',
+        'ㄴㅡㅇㄹㅕㄱ', 'ㄴㅏㅁㅍㅕㄴ', 'ㄴㅏㅇㅁㅏㄴ', 'ㄴㅏㄴㅁㅣㄴ', 'ㄴㅏㅁㅂㅓㄹ',
+        'ㄴㅜㄴㅂㅣㅊ', 'ㄴㅜㄴㄱㅣㄹ', 'ㄴㅜㄴㅁㅜㄹ', 'ㄴㅜㄴㅂㅏㅌ', 'ㄴㅏㅌㅁㅏㄹ',
+        'ㄴㅗㄴㅁㅜㄹ', 'ㄴㅗㄴㅂㅏㅌ', 'ㄴㅗㅇㅅㅏㄴ', 'ㄴㅏㅁㅂㅏㅇ', 'ㄴㅏㄴㅂㅏㅇ',
+        'ㄴㅏㄱㅊㅏㄹ', 'ㄴㅏㅁㄷㅗㅇ', 'ㄴㅏㅁㅓㅈㅣ', 'ㄴㅓㄱㅜㄹㅣ', 'ㄴㅏㅂㅇㅣㅂ',
+        'ㄴㅏㅇㄷㅗㄱ', 'ㄴㅗㅇㄷㅏㅁ', 'ㄴㅗㅇㅇㅏㄱ', 'ㄴㅗㅇㅂㅓㄴ', 'ㄴㅏㅁㄷㅏㄴ',
+        'ㄴㅏㄱㅇㅣㄴ', 'ㄴㅏㄱㅈㅓㅁ', 'ㄴㅗㄱㅇㅡㅁ', 'ㄴㅗㄱㅏㄹㅣ', 'ㄴㅗㄱㅎㅗㅏ',
+        'ㄴㅏㅣㅈㅓㄴ', 'ㄴㅏㅣㅂㅜㄴ', 'ㄴㅏㅣㅅㅣㄴ', 'ㄴㅏㅣㅁㅕㄴ', 'ㄴㅏㅣㅈㅏㅇ',
+        'ㄴㅏㅣㅇㅣㄹ', 'ㄴㅗㅣㅁㅜㄹ', 'ㄴㅗㅣㅈㅓㄴ', 'ㄴㅏㅣㄱㅏㄱ', 'ㄴㅏㅣㅇㅗㅣ',
+        // ㄷ
+        'ㄷㅏㄴㅍㅜㅇ', 'ㄷㅏㄴㄱㅕㄹ', 'ㄷㅏㄴㅈㅓㅁ', 'ㄷㅏㄴㅅㅣㄱ', 'ㄷㅏㄴㅅㅗㄱ',
+        'ㄷㅏㄴㅅㅣㄴ', 'ㄷㅏㅁㄷㅏㅇ', 'ㄷㅏㅁㅈㅏㅇ', 'ㄷㅏㅂㅈㅏㅇ', 'ㄷㅏㅇㅂㅜㄴ',
+        'ㄷㅏㅇㅈㅏㅇ', 'ㄷㅓㅁㅂㅜㄹ', 'ㄷㅗㅇㄱㅏㅂ', 'ㄷㅗㅇㄱㅜㄹ', 'ㄷㅗㅇㅁㅜㄹ',
+        'ㄷㅗㅇㅂㅏㄴ', 'ㄷㅗㅇㅂㅜㄱ', 'ㄷㅗㅇㅅㅏㄴ', 'ㄷㅗㅇㅅㅏㅇ', 'ㄷㅗㅇㅅㅓㅇ',
+        'ㄷㅗㅇㅅㅣㅁ', 'ㄷㅗㅇㅈㅏㄱ', 'ㄷㅗㅇㅈㅓㄴ', 'ㄷㅗㅇㅊㅏㅇ', 'ㄷㅡㄱㅈㅓㅁ',
+        'ㄷㅡㅇㅅㅏㄴ', 'ㄷㅡㅇㅂㅜㄹ', 'ㄷㅏㄹㅂㅣㅊ', 'ㄷㅏㄴㅍㅏㅌ', 'ㄷㅗㅌㅗㄹㅣ',
+        'ㄷㅗㄹㅏㅈㅣ', 'ㄷㅜㄹㅜㅁㅣ', 'ㄷㅏㄹㅣㅁㅣ', 'ㄷㅏㄹㄹㅕㄱ', 'ㄷㅏㄹㅂㅏㅁ',
+        'ㄷㅗㄹㅂㅏㅌ', 'ㄷㅗㄹㄷㅏㅁ', 'ㄷㅗㅇㅂㅗㄱ', 'ㄷㅗㄱㅈㅓㅁ', 'ㄷㅗㄹㅂㅏㄹ',
+        'ㄷㅗㄱㅂㅏㅇ', 'ㄷㅏㅇㅂㅓㄴ', 'ㄷㅏㅣㅁㅜㄴ', 'ㄷㅏㅣㅅㅓㄴ', 'ㄷㅏㅣㅈㅓㄴ',
+        'ㄷㅏㅣㅈㅜㅇ', 'ㄷㅏㅣㅂㅗㄴ', 'ㄷㅏㅣㄷㅏㅂ', 'ㄷㅏㅣㅈㅏㅇ', 'ㄷㅓㅍㄱㅏㅣ',
+        // ㄹ
+        'ㄹㅓㄴㄷㅓㄴ', 'ㄹㅣㅇㅋㅓㄴ', 'ㄹㅓㄴㅊㅣㅇ', 'ㄹㅓㄴㄴㅣㅇ', 'ㄹㅏㅂㅓㅣㄹ',
+        'ㄹㅓㅣㅁㅗㄴ', 'ㄹㅓㅣㄴㅈㅡ', 'ㄹㅏㅣㅁㅍㅡ', 'ㄹㅗㅋㅓㅣㅅ', 'ㄹㅏㅅㅓㅣㄱ',
+        'ㄹㅣㅂㅂㅏㅁ', 'ㄹㅗㅇㄹㅓㄴ', 'ㄹㅏㅣㅂㅣㅅ', 'ㄹㅏㅋㅓㅣㅅ', 'ㄹㅓㅣㅅㅡㄴ',
+        'ㄹㅗㄹㄹㅣㅇ', 'ㄹㅏㅣㄹㄹㅣ', 'ㄹㅓㅣㅇㅣㄴ', 'ㄹㅓㅣㅇㅣㄹ', 'ㄹㅓㅣㄴㅌㅡ',
+        'ㄹㅗㅁㅣㅇㅗ', 'ㄹㅣㅅㅓㅣㅅ', 'ㄹㅏㄷㅣㅇㅗ', 'ㄹㅓㅅㅣㅇㅏ', 'ㄹㅏㅈㅏㄴㅑ',
+        'ㄹㅗㄱㅗㅅㅡ', 'ㄹㅏㅇㅗㅅㅡ', 'ㄹㅣㅈㅗㅌㅡ', 'ㄹㅣㅍㅗㅌㅡ', 'ㄹㅏㅇㅣㅌㅓ',
+        'ㄹㅣㅅㅣㅂㅡ', 'ㄹㅗㅌㅓㅅㅡ', 'ㄹㅣㅋㅗㄷㅓ', 'ㄹㅏㅇㅣㄷㅓ', 'ㄹㅣㅂㅠㅇㅓ',
+        'ㄹㅣㄷㅓㄱㅣ',
+        // ㅁ
+        'ㅁㅗㄱㅈㅓㄱ', 'ㅁㅣㄴㅈㅗㄱ', 'ㅁㅏㄴㅈㅗㄱ', 'ㅁㅕㅇㅅㅣㅁ', 'ㅁㅣㄴㅅㅣㅁ',
+        'ㅁㅜㄹㄱㅕㄹ', 'ㅁㅜㄹㄱㅓㄴ', 'ㅁㅓㄱㅁㅜㄹ', 'ㅁㅜㄴㅈㅏㅇ', 'ㅁㅜㄴㅂㅓㅂ',
+        'ㅁㅏㄴㅂㅏㄹ', 'ㅁㅏㄴㅈㅓㅁ', 'ㅁㅕㄴㅈㅓㅂ', 'ㅁㅕㄴㅈㅓㄱ', 'ㅁㅜㄴㄷㅏㅂ',
+        'ㅁㅗㄱㅅㅜㅁ', 'ㅁㅣㄹㅁㅜㄹ', 'ㅁㅕㅇㄷㅏㄴ', 'ㅁㅕㅇㅅㅓㅇ', 'ㅁㅕㅇㅈㅏㅇ',
+        'ㅁㅕㅇㅈㅏㄱ', 'ㅁㅏㄱㅁㅏㄹ', 'ㅁㅏㄴㅊㅏㄴ', 'ㅁㅜㄴㅅㅣㄴ', 'ㅁㅜㄴㅈㅣㅂ',
+        'ㅁㅣㄹㅂㅏㅌ', 'ㅁㅕㅇㅊㅏㄹ', 'ㅁㅣㄴㅂㅏㄱ', 'ㅁㅜㄹㅍㅜㅁ', 'ㅁㅗㅇㄱㅗㄹ',
+        'ㅁㅕㄹㅁㅏㅇ', 'ㅁㅏㄴㅁㅜㄹ', 'ㅁㅓㄱㅂㅏㅇ', 'ㅁㅕㅇㅍㅜㅁ', 'ㅁㅏㅣㅈㅓㅁ',
+        'ㅁㅏㅣㅇㅣㄹ', 'ㅁㅏㅣㄴㅕㄴ', 'ㅁㅏㅣㄹㅕㄱ', 'ㅁㅏㄱㄴㅏㅣ', 'ㅁㅏㅣㅅㅣㄹ',
+        'ㅁㅏㅣㅁㅜㄹ', 'ㅁㅓㅣㅁㅣㄹ', 'ㅁㅣㄴㅏㄹㅣ', 'ㅁㅗㅅㅓㄹㅣ', 'ㅁㅏㅁㅜㄹㅣ',
+        'ㅁㅕㄴㅁㅗㄱ', 'ㅁㅣㅅㅏㅇㅣㄹ', 'ㅁㅗㄱㄷㅗㄹㅣ', 'ㅁㅜㄷㅓㄱㅣ', 'ㅁㅣㄴㅁㅜㄹ',
+        'ㅁㅏㅇㅅㅏㅇ', 'ㅁㅏㄱㅈㅏㅇ', 'ㅁㅏㄴㅈㅏㅇ', 'ㅁㅏㄹㅂㅓㄹ', 'ㅁㅏㅇㄹㅕㅇ',
+        'ㅁㅕㅇㄹㅕㅇ', 'ㅁㅕㅇㅁㅜㄴ', 'ㅁㅗㄱㅂㅏㄹ', 'ㅁㅗㄱㅍㅏㄴ', 'ㅁㅣㄹㅈㅓㅇ',
+        'ㅁㅣㅌㅊㅏㅇ', 'ㅁㅣㄴㅂㅏㅇ', 'ㅁㅏㄴㄷㅏㅁ', 'ㅁㅜㄴㄷㅏㄴ', 'ㅁㅜㄴㅈㅓㄴ',
+        'ㅁㅗㄹㄹㅏㄱ', 'ㅁㅗㅇㅅㅏㅇ', 'ㅁㅗㅁㅌㅗㅇ', 'ㅁㅜㄹㅈㅣㄹ', 'ㅁㅜㄹㅌㅗㅇ',
+        // ㅂ
+        'ㅂㅏㄴㅈㅏㅇ', 'ㅂㅏㄹㅈㅓㄴ', 'ㅂㅏㅇㅁㅜㄴ', 'ㅂㅏㅇㅂㅓㅂ', 'ㅂㅏㅇㅅㅗㅇ',
+        'ㅂㅏㄹㄱㅕㄴ', 'ㅂㅏㄹㄷㅏㄹ', 'ㅂㅏㄹㅁㅕㅇ', 'ㅂㅏㅂㅅㅏㅇ', 'ㅂㅕㄴㄱㅕㅇ',
+        'ㅂㅕㄴㅁㅕㅇ', 'ㅂㅕㄹㅂㅣㅊ', 'ㅂㅕㅇㄹㅕㄱ', 'ㅂㅕㅇㅅㅣㄹ', 'ㅂㅕㅇㅈㅏㅇ',
+        'ㅂㅗㄱㅈㅏㅇ', 'ㅂㅗㄴㅈㅣㄹ', 'ㅂㅜㄱㅁㅜㄴ', 'ㅂㅜㄴㄷㅏㄴ', 'ㅂㅜㄹㅂㅓㅂ',
+        'ㅂㅜㄹㅁㅏㄴ', 'ㅂㅜㄹㅇㅏㄴ', 'ㅂㅣㅅㅁㅜㄹ', 'ㅂㅏㅇㅎㅏㄱ', 'ㅂㅓㅁㅇㅣㄴ',
+        'ㅂㅓㄴㅇㅕㄱ', 'ㅂㅕㄱㄷㅗㄹ', 'ㅂㅗㅁㅂㅣㅊ', 'ㅂㅗㅇㄱㅓㄴ', 'ㅂㅗㅇㅎㅏㅂ',
+        'ㅂㅜㄴㅁㅏㄹ', 'ㅂㅜㄴㅂㅕㄹ', 'ㅂㅜㄴㅇㅕㄹ', 'ㅂㅜㄹㄱㅕㄹ', 'ㅂㅜㄹㄱㅣㄹ',
+        'ㅂㅜㄹㅂㅣㅊ', 'ㅂㅣㄴㄱㅗㄴ', 'ㅂㅣㄴㅋㅏㄴ', 'ㅂㅣㅇㅍㅏㄴ', 'ㅂㅏㄴㅂㅏㄹ',
+        'ㅂㅏㅣㅅㅣㄴ', 'ㅂㅏㅣㅂㅏㄴ', 'ㅂㅏㅣㄷㅏㄹ', 'ㅂㅏㅣㄱㅕㅇ', 'ㅂㅏㅣㄴㅏㅇ',
+        'ㅂㅏㄴㅏㄴㅏ', 'ㅂㅏㄱㅜㄴㅣ', 'ㅂㅗㅈㅏㄱㅣ', 'ㅂㅣㅋㅣㄴㅣ', 'ㅂㅜㅈㅗㄹㅣ',
+        // ㅅ
+        'ㅅㅏㄴㅁㅜㄹ', 'ㅅㅓㄹㅁㅕㅇ', 'ㅅㅓㄹㅌㅏㅇ', 'ㅅㅣㄱㄷㅏㅇ', 'ㅅㅣㄱㅁㅜㄹ',
+        'ㅅㅓㄴㅈㅏㅇ', 'ㅅㅓㅇㄷㅏㅇ', 'ㅅㅓㅇㅂㅕㄹ', 'ㅅㅓㅇㅈㅓㄱ', 'ㅅㅓㅇㅍㅜㅁ',
+        'ㅅㅣㄴㅂㅏㄹ', 'ㅅㅣㄴㅁㅜㄴ', 'ㅅㅣㄴㅈㅏㅇ', 'ㅅㅣㄹㅁㅏㅇ', 'ㅅㅣㅁㅈㅏㅇ',
+        'ㅅㅣㅁㅍㅏㄴ', 'ㅅㅏㄴㅂㅜㄹ', 'ㅅㅏㄴㅅㅏㅁ', 'ㅅㅏㄴㅈㅓㄱ', 'ㅅㅏㄴㅈㅏㅇ',
+        'ㅅㅏㅇㅈㅓㅁ', 'ㅅㅏㅇㅅㅏㅇ', 'ㅅㅏㅇㅅㅣㄱ', 'ㅅㅏㅇㅈㅣㅇ', 'ㅅㅏㅇㅍㅜㅁ',
+        'ㅅㅏㅇㅂㅓㄹ', 'ㅅㅓㄱㅌㅏㄴ', 'ㅅㅓㄱㅌㅏㅂ', 'ㅅㅓㄱㅇㅑㅇ', 'ㅅㅓㄴㅁㅜㄹ',
+        'ㅅㅓㄴㅂㅏㄹ', 'ㅅㅓㄹㅈㅓㅇ', 'ㅅㅓㄹㅈㅓㄴ', 'ㅅㅓㄹㄴㅏㄹ', 'ㅅㅓㄹㄱㅜㄱ',
+        'ㅅㅓㅇㅂㅕㄱ', 'ㅅㅓㅇㅇㅣㄴ', 'ㅅㅗㄱㅁㅜㄹ', 'ㅅㅗㄱㅇㅗㅅ', 'ㅅㅗㄴㄱㅣㄹ',
+        'ㅅㅗㄴㅁㅏㅅ', 'ㅅㅗㄴㅂㅏㄹ', 'ㅅㅗㅇㅂㅕㄹ', 'ㅅㅗㅇㅍㅕㄴ', 'ㅅㅜㄴㄱㅏㄴ',
+        'ㅅㅣㄹㅈㅓㄱ', 'ㅅㅗㄴㅏㅁㅜ', 'ㅅㅗㄴㅏㄱㅣ', 'ㅅㅏㄷㅏㄹㅣ', 'ㅅㅏㅣㅂㅕㄱ',
+        // ㅇ
+        'ㅇㅏㄴㄱㅕㅇ', 'ㅇㅏㄴㄴㅕㅇ', 'ㅇㅕㄴㅁㅏㄹ', 'ㅇㅕㄴㅍㅣㄹ', 'ㅇㅕㅇㅇㅜㅇ',
+        'ㅇㅏㄴㅂㅏㅇ', 'ㅇㅏㄴㅅㅣㅁ', 'ㅇㅏㅁㅅㅓㄱ', 'ㅇㅏㅁㅅㅏㄴ', 'ㅇㅏㅁㅅㅏㄹ',
+        'ㅇㅑㅇㅁㅏㄹ', 'ㅇㅑㅇㅂㅏㄴ', 'ㅇㅑㅇㅅㅣㅁ', 'ㅇㅑㅇㅅㅏㄴ', 'ㅇㅓㄴㄷㅓㄱ',
+        'ㅇㅓㅁㅂㅓㄹ', 'ㅇㅓㅇㅁㅏㅇ', 'ㅇㅕㄴㄱㅡㅁ', 'ㅇㅕㄴㄱㅡㄱ', 'ㅇㅕㄴㅁㅗㅅ',
+        'ㅇㅕㄴㅅㅓㄹ', 'ㅇㅕㄴㅈㅏㅇ', 'ㅇㅕㄴㅈㅓㄴ', 'ㅇㅕㅁㅈㅓㄴ', 'ㅇㅕㅁㅂㅜㄹ',
+        'ㅇㅕㅇㄱㅏㅁ', 'ㅇㅕㅇㅁㅜㄴ', 'ㅇㅕㅇㅁㅜㄹ', 'ㅇㅕㅇㅅㅏㅇ', 'ㅇㅕㅇㅅㅓㅇ',
+        'ㅇㅕㅇㅈㅏㅇ', 'ㅇㅕㅇㅈㅓㄴ', 'ㅇㅗㄴㄷㅏㄹ', 'ㅇㅗㄴㄷㅗㄹ', 'ㅇㅗㄱㅅㅏㅇ',
+        'ㅇㅗㄱㅅㅓㄱ', 'ㅇㅗㄴㅅㅏㅇ', 'ㅇㅗㄴㅈㅓㅇ', 'ㅇㅡㅁㅂㅏㄴ', 'ㅇㅡㅁㅅㅓㅇ',
+        'ㅇㅡㅁㅅㅣㄱ', 'ㅇㅡㅇㄷㅏㅂ', 'ㅇㅣㄹㅅㅏㅇ', 'ㅇㅣㄹㅅㅣㄱ', 'ㅇㅣㄹㅈㅓㄹ',
+        'ㅇㅣㅁㄱㅡㅁ', 'ㅇㅣㅁㅅㅏㄴ', 'ㅇㅣㅂㅁㅜㄴ', 'ㅇㅣㅂㅅㅜㄹ', 'ㅇㅣㅂㅈㅏㅇ',
+        'ㅇㅣㅂㅊㅏㄹ', 'ㅇㅣㅇㄱㅓㄹ', 'ㅇㅏㄴㄱㅓㄴ', 'ㅇㅏㄴㄱㅏㅁ', 'ㅇㅏㄱㄷㅏㅇ',
+        'ㅇㅏㄱㅁㅗㅇ', 'ㅇㅏㄱㅂㅏㄹ', 'ㅇㅏㄱㅅㅏㅇ', 'ㅇㅏㄱㅅㅓㅇ', 'ㅇㅏㄱㅇㅕㄱ',
+        'ㅇㅏㄴㅁㅕㄴ', 'ㅇㅏㄴㅁㅗㄱ', 'ㅇㅏㄴㅅㅏㄴ', 'ㅇㅏㄹㅂㅏㅁ', 'ㅇㅏㅁㅁㅜㄴ',
+        'ㅇㅏㅁㅅㅣㄹ', 'ㅇㅏㅁㅎㅡㄱ', 'ㅇㅏㅂㄹㅕㄱ', 'ㅇㅏㅂㅂㅏㄱ', 'ㅇㅏㅂㅈㅓㅇ',
+        'ㅇㅏㅇㅅㅜㄱ', 'ㅇㅏㅣㄱㅜㄱ', 'ㅇㅏㅣㅈㅓㅇ', 'ㅇㅏㅣㅊㅏㅇ', 'ㅇㅏㅣㅇㅣㄴ',
+        'ㅇㅑㅇㅂㅜㄴ', 'ㅇㅓㄱㅇㅏㅂ', 'ㅇㅓㄱㅇㅑㅇ', 'ㅇㅓㄱㅈㅏㅇ', 'ㅇㅓㅁㄱㅕㄱ',
+        'ㅇㅓㅁㅅㅓㄴ', 'ㅇㅓㅂㅈㅓㄱ', 'ㅇㅕㄱㄱㅕㅇ', 'ㅇㅕㄱㅅㅓㄹ', 'ㅇㅕㄱㅅㅓㅇ',
+        'ㅇㅕㄱㅈㅓㅇ', 'ㅇㅕㄴㅂㅏㄹ', 'ㅇㅗㄱㅁㅜㄴ', 'ㅇㅗㄱㅍㅕㄴ', 'ㅇㅗㅅㅗㄹㅣ',
+        'ㅇㅓㅁㅓㄴㅣ', 'ㅇㅏㅂㅓㅈㅣ', 'ㅇㅣㅇㅑㄱㅣ', 'ㅇㅕㅣㄱㅏㅁ', 'ㅇㅕㅣㅈㅓㄹ',
+        'ㅇㅗㅣㅂㅏㄱ', 'ㅇㅗㅣㅊㅜㄹ', 'ㅇㅜㅣㅂㅓㅂ', 'ㅇㅜㅣㅎㅕㅂ', 'ㅇㅗㅣㅅㅏㅇ',
+        // ㅈ
+        'ㅈㅏㄱㅍㅜㅁ', 'ㅈㅏㅇㄱㅏㅂ', 'ㅈㅏㅇㄱㅜㄴ', 'ㅈㅏㅇㄴㅏㅁ', 'ㅈㅏㅇㄷㅏㄴ',
+        'ㅈㅏㅇㅁㅏㄱ', 'ㅈㅏㅇㅂㅏㄹ', 'ㅈㅏㅇㅂㅕㅇ', 'ㅈㅏㅇㅂㅕㄱ', 'ㅈㅏㅇㅈㅓㅁ',
+        'ㅈㅓㄹㄱㅏㅁ', 'ㅈㅓㄹㅁㅏㅇ', 'ㅈㅓㅇㄷㅏㅂ', 'ㅈㅓㅇㅅㅏㅇ', 'ㅈㅓㅇㅅㅓㅇ',
+        'ㅈㅓㅇㅅㅣㄴ', 'ㅈㅓㅇㅈㅓㄱ', 'ㅈㅓㅇㅈㅓㅁ', 'ㅈㅗㅇㄱㅏㄱ', 'ㅈㅗㅇㄷㅏㄴ',
+        'ㅈㅗㅇㅁㅏㄹ', 'ㅈㅗㅇㅈㅓㅁ', 'ㅈㅜㄱㅇㅡㅁ', 'ㅈㅜㅇㄱㅏㄴ', 'ㅈㅜㅇㄱㅜㄱ',
+        'ㅈㅜㅇㄷㅏㄴ', 'ㅈㅜㅇㄷㅗㄱ', 'ㅈㅜㅇㅅㅣㅁ', 'ㅈㅡㅇㅅㅏㅇ', 'ㅈㅡㅇㅇㅣㄴ',
+        'ㅈㅣㄱㅅㅓㄴ', 'ㅈㅣㄱㅇㅓㅂ', 'ㅈㅣㄱㅈㅏㅇ', 'ㅈㅣㄱㅈㅓㄴ', 'ㅈㅣㄹㅁㅜㄴ',
+        'ㅈㅣㄹㅂㅕㅇ', 'ㅈㅣㅂㄷㅏㄴ', 'ㅈㅣㅂㅈㅜㅇ', 'ㅈㅜㅁㅓㄴㅣ', 'ㅈㅓㄱㅗㄹㅣ',
+        'ㅈㅏㅌㅜㄹㅣ', 'ㅈㅗㄱㅏㅂㅣ', 'ㅈㅏㅣㅅㅏㄴ', 'ㅈㅏㅣㄷㅏㄴ', 'ㅈㅏㅣㅁㅜㄹ',
+        'ㅈㅓㅣㅈㅏㄱ', 'ㅈㅓㅣㅈㅓㅇ', 'ㅈㅓㅣㅊㅜㄹ', 'ㅈㅗㅏㅅㅓㄱ', 'ㅈㅗㅏㅈㅓㄹ',
+        'ㅈㅏㄱㅇㅓㅂ', 'ㅈㅏㄱㄱㅗㄱ', 'ㅈㅏㄱㅁㅜㄴ', 'ㅈㅏㄴㅅㅏㅇ', 'ㅈㅓㅂㄱㅡㄴ',
+        'ㅈㅓㅂㅅㅗㄱ', 'ㅈㅓㅇㅂㅗㄱ', 'ㅈㅓㅇㅁㅜㄴ', 'ㅈㅗㅇㅁㅗㄱ', 'ㅈㅣㅂㄴㅕㅁ',
+        'ㅈㅣㅂㄱㅕㄹ', 'ㅈㅣㅂㅊㅏㄱ', 'ㅈㅣㄴㅅㅣㅁ', 'ㅈㅣㄴㅅㅣㄹ', 'ㅈㅣㄴㅈㅓㄴ',
+        'ㅈㅣㄴㅈㅓㅇ', 'ㅈㅣㄴㅍㅜㅁ', 'ㅈㅓㄴㅁㅏㅇ', 'ㅈㅓㄴㅅㅓㄹ', 'ㅈㅓㄹㅂㅕㄱ',
+        // ㅊ
+        'ㅊㅏㄴㅂㅏㄴ', 'ㅊㅏㅁㅅㅓㄱ', 'ㅊㅏㅁㅈㅓㄴ', 'ㅊㅏㅇㄹㅣㅂ', 'ㅊㅏㅇㅅㅓㄹ',
+        'ㅊㅏㅇㅈㅏㄱ', 'ㅊㅏㅇㅁㅜㄴ', 'ㅊㅓㄹㄱㅏㅇ', 'ㅊㅓㄹㅁㅜㄴ', 'ㅊㅓㄹㅂㅕㄱ',
+        'ㅊㅓㄹㅂㅗㅇ', 'ㅊㅓㄹㅂㅜㄴ', 'ㅊㅓㄹㅅㅏㅇ', 'ㅊㅓㄹㅊㅣㄱ', 'ㅊㅓㄹㅍㅏㄴ',
+        'ㅊㅓㄹㅎㅏㄱ', 'ㅊㅓㅇㄱㅏㄱ', 'ㅊㅓㅇㄱㅕㄹ', 'ㅊㅓㅇㄱㅜㄴ', 'ㅊㅓㅇㄴㅕㄴ',
+        'ㅊㅓㅇㄷㅏㄴ', 'ㅊㅓㅇㄷㅗㅇ', 'ㅊㅓㅇㄹㅕㄱ', 'ㅊㅓㅇㅁㅕㅇ', 'ㅊㅓㅇㅅㅏㄴ',
+        'ㅊㅓㅇㅅㅓㄱ', 'ㅊㅓㅇㅈㅜㅇ', 'ㅊㅓㅇㅈㅣㄴ', 'ㅊㅓㅇㅊㅜㄴ', 'ㅊㅓㅇㅍㅜㅇ',
+        'ㅊㅗㄱㄱㅏㄱ', 'ㅊㅗㄱㅁㅏㅇ', 'ㅊㅗㄱㅂㅏㄹ', 'ㅊㅗㅇㄱㅏㄱ', 'ㅊㅗㅇㄱㅓㅁ',
+        'ㅊㅗㅇㄱㅕㄹ', 'ㅊㅗㅇㅇㅏㄹ', 'ㅊㅗㅇㅈㅏㅇ', 'ㅊㅗㅇㅌㅏㄴ', 'ㅊㅗㄴㄱㅡㄱ',
+        'ㅊㅜㄱㅂㅗㄱ', 'ㅊㅜㄱㅈㅓㄱ', 'ㅊㅜㄹㄱㅜㄱ', 'ㅊㅜㄹㄷㅗㅇ', 'ㅊㅜㄹㅂㅏㄹ',
+        'ㅊㅓㅣㄱㅕㄹ', 'ㅊㅓㅣㄹㅕㄱ', 'ㅊㅗㅣㅅㅓㄴ', 'ㅊㅗㅣㅈㅗㅇ', 'ㅊㅜㅣㅇㅓㅂ',
+        // ㅋ
+        'ㅋㅏㄹㄴㅏㄹ', 'ㅋㅏㄹㄷㅡㅇ', 'ㅋㅏㄹㅈㅣㅂ', 'ㅋㅏㄹㅋㅏㄹ', 'ㅋㅏㄹㄹㅓㅁ',
+        'ㅋㅗㅇㅁㅜㄹ', 'ㅋㅗㅇㅂㅏㅌ', 'ㅋㅗㅇㅂㅏㅂ', 'ㅋㅗㅇㅇㅏㄹ', 'ㅋㅗㅇㄱㅜㄱ',
+        'ㅋㅗㅅㅁㅜㄹ', 'ㅋㅗㅅㄷㅡㅇ', 'ㅋㅗㅅㄴㅏㄹ', 'ㅋㅗㅅㄱㅣㅁ', 'ㅋㅡㄴㄱㅣㄹ',
+        'ㅋㅡㄴㄷㅗㄴ', 'ㅋㅡㄴㅂㅏㅇ', 'ㅋㅡㄴㅈㅣㅂ', 'ㅋㅡㄴㅎㅕㅇ', 'ㅋㅏㅋㅏㅇㅗ',
+        'ㅋㅏㅈㅣㄴㅗ', 'ㅋㅣㅂㅗㄷㅡ', 'ㅋㅓㅣㅊㅓㅂ', 'ㅋㅏㅣㅁㅍㅡ',
+        // ㅌ
+        'ㅌㅏㄴㅅㅣㄱ', 'ㅌㅏㄴㅅㅏㄴ', 'ㅌㅏㄴㅅㅓㅇ', 'ㅌㅏㄴㅇㅏㅂ', 'ㅌㅏㄴㄹㅕㄱ',
+        'ㅌㅏㄹㄹㅏㄱ', 'ㅌㅏㄹㅂㅓㅂ', 'ㅌㅏㄹㅂㅜㄱ', 'ㅌㅏㄹㅅㅓㄴ', 'ㅌㅏㄹㅊㅜㄹ',
+        'ㅌㅏㅇㄱㅏㅁ', 'ㅌㅏㅇㅈㅣㄴ', 'ㅌㅏㅇㅇㅑㄱ', 'ㅌㅏㅁㄷㅗㄱ', 'ㅌㅏㅁㅁㅜㄴ',
+        'ㅌㅏㅁㅇㅛㄱ', 'ㅌㅏㅂㅅㅡㅇ', 'ㅌㅏㅂㄱㅓㄴ', 'ㅌㅓㅅㅂㅏㅌ', 'ㅌㅗㅂㅈㅣㄹ',
+        'ㅌㅓㄹㅅㅣㄹ', 'ㅌㅓㄹㅇㅗㅅ', 'ㅌㅗㅂㅂㅏㅂ', 'ㅌㅗㅂㄴㅏㄹ', 'ㅌㅗㅇㄱㅏㅁ',
+        'ㅌㅗㅇㄱㅗㄱ', 'ㅌㅗㅇㄷㅏㄹ', 'ㅌㅗㅇㄷㅗㄱ', 'ㅌㅗㅇㅅㅣㄴ', 'ㅌㅗㅇㅅㅓㄹ',
+        'ㅌㅗㅇㅈㅏㅇ', 'ㅌㅗㅇㅈㅓㅁ', 'ㅌㅗㅇㅊㅏㄹ', 'ㅌㅡㄱㄱㅡㅂ', 'ㅌㅡㄱㅅㅓㅇ',
+        'ㅌㅡㄱㅅㅣㄹ', 'ㅌㅡㄱㅈㅓㅇ', 'ㅌㅡㄱㅈㅣㅂ', 'ㅌㅡㄱㅊㅜㄹ', 'ㅌㅣㅁㅈㅏㅇ',
+        'ㅌㅏㅣㅇㅑㅇ', 'ㅌㅏㅣㅍㅜㅇ', 'ㅌㅏㅣㅂㅏㄴ', 'ㅌㅏㅣㅇㅓㅂ', 'ㅌㅜㅈㅏㅣㅇ',
+        'ㅌㅡㅁㅅㅏㅣ', 'ㅌㅗㅁㅏㅌㅗ', 'ㅌㅏㅇㅣㅇㅓ', 'ㅌㅏㅈㅏㄱㅣ', 'ㅌㅓㅁㅜㄴㅣ',
+        // ㅍ
+        'ㅍㅏㄴㄱㅕㄹ', 'ㅍㅕㄴㄱㅕㄴ', 'ㅍㅗㄱㅂㅏㄹ', 'ㅍㅗㄱㄹㅕㄱ', 'ㅍㅜㅁㅈㅣㄹ',
+        'ㅍㅏㄴㄷㅏㄴ', 'ㅍㅕㅇㅁㅕㄴ', 'ㅍㅗㄱㅍㅜㅇ', 'ㅍㅜㅇㄱㅕㅇ', 'ㅍㅣㅇㄱㅕㅣ',
+        'ㅍㅗㄱㄷㅗㅇ', 'ㅍㅏㅂㅅㅗㅇ', 'ㅍㅏㅌㅈㅜㄱ', 'ㅍㅕㅇㅁㅣㄴ', 'ㅍㅕㄴㅈㅣㅂ',
+        'ㅍㅕㅇㅈㅓㅁ', 'ㅍㅏㄴㅁㅕㅇ', 'ㅍㅜㅁㅈㅗㅇ', 'ㅍㅜㅇㅅㅗㄱ', 'ㅍㅜㅁㅅㅓㅇ',
+        'ㅍㅣㄹㅇㅕㄴ', 'ㅍㅗㄱㅅㅣㄱ', 'ㅍㅣㄴㅈㅏㄴ', 'ㅍㅣㅅㅈㅜㄹ', 'ㅍㅜㅇㅅㅓㄴ',
+        'ㅍㅕㄴㅂㅓㅂ', 'ㅍㅏㄹㅁㅗㄱ', 'ㅍㅗㄱㅅㅓㄹ', 'ㅍㅜㅁㅁㅗㄱ', 'ㅍㅜㅁㅈㅓㄹ',
+        'ㅍㅜㅇㄴㅕㄴ', 'ㅍㅕㅇㄴㅕㄴ', 'ㅍㅣㅅㅁㅜㄹ', 'ㅍㅕㄴㅅㅣㄱ', 'ㅍㅕㄴㅇㅏㄴ',
+        'ㅍㅜㅇㅅㅓㅇ', 'ㅍㅜㅇㅅㅡㅂ', 'ㅍㅕㅇㅅㅏㅇ', 'ㅍㅣㄹㄹㅡㅁ', 'ㅍㅣㄹㄷㅗㄱ',
+        'ㅍㅜㅇㅈㅏㄱ', 'ㅍㅜㅇㅈㅓㄴ', 'ㅍㅜㅇㅎㅑㅇ', 'ㅍㅜㄹㅇㅣㅍ', 'ㅍㅣㄹㅅㅡㅇ',
+        'ㅍㅏㅣㅈㅓㄴ', 'ㅍㅕㅣㅇㅓㅂ', 'ㅍㅕㅣㅇㅣㄴ', 'ㅍㅗㄷㅗㅈㅜ', 'ㅍㅣㅇㅏㄴㅗ',
+        // ㅎ
+        'ㅎㅏㄱㅁㅜㄴ', 'ㅎㅏㄴㄱㅜㄱ', 'ㅎㅏㄴㄱㅡㄹ', 'ㅎㅏㅂㄱㅕㄱ', 'ㅎㅏㅂㅂㅓㅂ',
+        'ㅎㅏㅇㄱㅗㅇ', 'ㅎㅏㅇㅂㅗㄱ', 'ㅎㅕㅂㄹㅕㄱ', 'ㅎㅜㄹㄹㅕㄴ', 'ㅎㅓㄴㅂㅓㅂ',
+        'ㅎㅕㄴㅅㅣㄹ', 'ㅎㅕㄹㅇㅏㅂ', 'ㅎㅕㄹㅈㅓㄴ', 'ㅎㅏㅁㅈㅓㅇ', 'ㅎㅏㅂㅈㅏㅇ',
+        'ㅎㅏㅂㅊㅏㅇ', 'ㅎㅏㄴㅂㅗㄱ', 'ㅎㅏㄴㅂㅏㄹ', 'ㅎㅗㄴㄹㅏㄴ', 'ㅎㅡㅂㅇㅕㄴ',
+        'ㅎㅏㄴㅅㅣㄱ', 'ㅎㅡㄱㅂㅏㄹ', 'ㅎㅕㄱㅁㅕㅇ', 'ㅎㅕㅂㅈㅓㅇ', 'ㅎㅕㅇㅂㅓㄹ',
+        'ㅎㅕㅇㅂㅓㅂ', 'ㅎㅏㅇㅁㅏㄴ', 'ㅎㅓㄴㅅㅣㄴ', 'ㅎㅓㄴㅎㅕㄹ', 'ㅎㅓㅁㄷㅏㅁ',
+        'ㅎㅏㄴㅈㅓㅇ', 'ㅎㅏㄱㄱㅡㅂ', 'ㅎㅏㄱㄹㅕㄱ', 'ㅎㅏㄱㅂㅓㄹ', 'ㅎㅏㅇㅅㅓㅇ',
+        'ㅎㅕㅇㄴㅣㅁ', 'ㅎㅜㄴㅈㅏㅇ', 'ㅎㅏㅂㅅㅜㄱ', 'ㅎㅏㅂㅅㅏㄴ', 'ㅎㅏㄴㅌㅏㄴ',
+        'ㅎㅗㄴㄷㅗㄴ', 'ㅎㅗㄴㄷㅗㅇ', 'ㅎㅏㅣㅁㅜㄹ', 'ㅎㅏㅣㅂㅕㄴ', 'ㅎㅗㅏㅂㅜㄴ',
+        'ㅎㅗㅏㅈㅏㅇ', 'ㅎㅗㅣㅂㅗㄱ', 'ㅎㅕㅣㅅㅓㅇ', 'ㅎㅏㅅㅜㄷㅗ', 'ㅎㅏㅁㅗㄴㅣ'
+    ];
+
+    let targetWord = '';
+    let currentRow = 0;
+    let currentCol = 0;
+    let board = [];
+    let gameOver = false;
+
+    // 게임 초기화
+    function initGame() {
+        targetWord = WORDS[Math.floor(Math.random() * WORDS.length)];
+        currentRow = 0;
+        currentCol = 0;
+        board = Array(6).fill('').map(() => Array(6).fill(''));
+        gameOver = false;
+        
+        renderGrid();
+        resetKeyboard();
+    }
+
+    // 그리드 렌더링
+    function renderGrid() {
+        const grid = document.getElementById('grid');
+        grid.innerHTML = '';
+        for (let r = 0; r < 6; r++) {
+            for (let c = 0; c < 6; c++) {
+                const cell = document.createElement('div');
+                cell.id = `cell-${r}-${c}`;
+                cell.className = 'cell';
+                if (board[r][c] !== '') {
+                    cell.textContent = board[r][c];
+                    cell.classList.add('filled');
+                }
+                grid.appendChild(cell);
+            }
+        }
+    }
+
+    // 키보드 색상 초기화
+    function resetKeyboard() {
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(key => {
+            key.classList.remove('correct', 'present', 'absent');
+        });
+    }
+
+    // 키 입력 처리
+    function handleKey(key) {
+        if (gameOver) return;
+
+        if (key === 'Enter') {
+            submitRow();
+        } else if (key === 'Backspace') {
+            deleteLetter();
+        } else {
+            addLetter(key);
+        }
+    }
+
+    // 자음/모음 추가
+    function addLetter(letter) {
+        if (currentCol < 6) {
+            board[currentRow][currentCol] = letter;
+            const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+            cell.textContent = letter;
+            cell.classList.add('filled');
+            currentCol++;
+        }
+    }
+
+    // 글자 삭제
+    function deleteLetter() {
+        if (currentCol > 0) {
+            currentCol--;
+            board[currentRow][currentCol] = '';
+            const cell = document.getElementById(`cell-${currentRow}-${currentCol}`);
+            cell.textContent = '';
+            cell.classList.remove('filled');
+        }
+    }
+
+    // 줄 제출 및 정답 확인
+    function submitRow() {
+        if (currentCol !== 6) {
+            alert('글자를 모두 채워주세요!');
+            return;
+        }
+
+        const guess = board[currentRow];
+        const targetArr = targetWord.split('');
+        let colors = Array(6).fill('absent');
+        let targetCount = {};
+
+        // 정답 단어의 자모음 개수 카운트
+        for (let char of targetArr) {
+            targetCount[char] = (targetCount[char] || 0) + 1;
+        }
+
+        // 1차 검사: 초록색 (자리도 맞고 글자도 맞는 경우)
+        for (let i = 0; i < 6; i++) {
+            if (guess[i] === targetArr[i]) {
+                colors[i] = 'correct';
+                targetCount[guess[i]]--;
+            }
+        }
+
+        // 2차 검사: 노란색 (글자는 맞지만 자리가 틀린 경우)
+        for (let i = 0; i < 6; i++) {
+            if (colors[i] !== 'correct' && targetCount[guess[i]] > 0) {
+                colors[i] = 'present';
+                targetCount[guess[i]]--;
+            }
+        }
+
+        // 셀과 키보드에 색상 적용
+        let correctCount = 0;
+        for (let i = 0; i < 6; i++) {
+            const cell = document.getElementById(`cell-${currentRow}-${i}`);
+            cell.classList.add(colors[i]);
+            updateKeyboardColor(guess[i], colors[i]);
+            if (colors[i] === 'correct') correctCount++;
+        }
+
+        // 게임 결과 처리
+        setTimeout(() => {
+            if (correctCount === 6) {
+                alert('정답입니다! 🎉\n오른쪽 위 새로고침 버튼을 눌러 다시 시작해보세요.');
+                gameOver = true;
+            } else {
+                currentRow++;
+                currentCol = 0;
+                if (currentRow === 6) {
+                    alert(`게임 오버! 😢\n정답은 [ ${targetWord} ] 입니다.`);
+                    gameOver = true;
+                }
+            }
+        }, 300);
+    }
+
+    // 키보드 버튼 색상 업데이트
+    function updateKeyboardColor(letter, status) {
+        const keys = document.querySelectorAll('.key');
+        keys.forEach(key => {
+            if (key.textContent === letter) {
+                // 초록색이 이미 적용되어 있다면 덮어쓰지 않음
+                if (key.classList.contains('correct')) return;
+                // 노란색이 이미 적용되어 있는데, 회색이 들어오면 무시
+                if (key.classList.contains('present') && status === 'absent') return;
+                
+                key.classList.remove('present', 'absent');
+                key.classList.add(status);
+            }
+        });
+    }
+
+    // 물리적 키보드 입력 지원
+    document.addEventListener('keydown', (e) => {
+        const keyMap = {
+            'q':'ㅂ', 'w':'ㅈ', 'e':'ㄷ', 'r':'ㄱ', 't':'ㅅ', 'y':'ㅛ', 'u':'ㅕ', 'i':'ㅑ',
+            'a':'ㅁ', 's':'ㄴ', 'd':'ㅇ', 'f':'ㄹ', 'g':'ㅎ', 'h':'ㅗ', 'j':'ㅓ', 'k':'ㅏ', 'l':'ㅣ',
+            'z':'ㅋ', 'x':'ㅌ', 'c':'ㅊ', 'v':'ㅍ', 'b':'ㅠ', 'n':'ㅜ', 'm':'ㅡ'
+        };
+        if (e.key === 'Enter') handleKey('Enter');
+        else if (e.key === 'Backspace') handleKey('Backspace');
+        else if (keyMap[e.key.toLowerCase()]) handleKey(keyMap[e.key.toLowerCase()]);
+        // 한글 입력 상태일 때 직접 입력
+        else if (Object.values(keyMap).includes(e.key)) handleKey(e.key);
+    });
+
+    // 시작
+    initGame();
+</script>
+</body>
+</html>
